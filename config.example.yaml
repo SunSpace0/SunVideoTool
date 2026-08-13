@@ -47,3 +47,9 @@ runtime:
   log_level: INFO
   host: 127.0.0.1
   port: 7860
+
+llm:
+  provider: ""
+  api_base: ""
+  api_key: ""
+  model: ""

@@ -23,6 +23,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     runtime = context.config["runtime"]
     host = args.host or runtime.get("host", "127.0.0.1")
     port = args.port or int(runtime.get("port", 7860))
+    if port in {5173, 8000}:
+        raise SystemExit("5173 和 8000 端口已被其他项目占用，请更换端口")
+    if not 1024 <= port <= 65535:
+        raise SystemExit("服务端口应在 1024-65535 之间")
 
     context.logger.info("启动 SunVideoTool，当前设备: %s", context.device)
     if context.device == "cpu":

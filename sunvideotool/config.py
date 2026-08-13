@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -34,6 +35,14 @@ def load_config(config_path: Path | None = None) -> Dict[str, Any]:
         raise ConfigError("config.yaml 顶层必须是字典结构")
 
     return config
+
+
+def save_config(config: Dict[str, Any], config_path: Path | None = None) -> None:
+    resolved_path = (config_path or CONFIG_FILE).resolve()
+    resolved_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = deepcopy(config)
+    with resolved_path.open("w", encoding="utf-8") as handle:
+        yaml.safe_dump(payload, handle, allow_unicode=True, sort_keys=False)
 
 
 def require_mapping(config: Dict[str, Any], key: str) -> Dict[str, Any]:
@@ -121,6 +130,15 @@ def validate_config(config: Dict[str, Any]) -> Tuple[str, str]:
 
     for key in ("device_preference", "log_level"):
         require_string(runtime, key)
+
+    try:
+        port = int(runtime.get("port", 7860))
+    except (TypeError, ValueError):
+        raise ConfigError("runtime.port 必须是整数")
+    if port in {5173, 8000}:
+        raise ConfigError("5173 和 8000 端口已被其他项目占用，请更换 runtime.port")
+    if not 1024 <= port <= 65535:
+        raise ConfigError("runtime.port 应在 1024-65535 之间")
 
     ffmpeg_bin = resolve_binary(paths["ffmpeg_bin"], "ffmpeg")
     ffprobe_bin = resolve_binary(paths["ffprobe_bin"], "ffprobe")

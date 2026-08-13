@@ -23,6 +23,16 @@ conda create -n SunVideoTool python=3.11 -y
 conda activate SunVideoTool
 brew install ffmpeg
 pip install -e .
+# 完整功能（含 audio-separator）
+pip install -e ".[separation]"
+```
+
+如果 conda 源不可用，也可以直接用虚拟环境：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[separation]"
 ```
 
 `audio-separator` 是默认可选分离后端，如果使用本地 UVR5 自定义接口，也可以跳过：
@@ -47,6 +57,7 @@ cp config.example.yaml config.yaml
 - `yt_dlp.*`：下载参数和 B 站认证方式
 - `separator.*`：分离后端、模型路径、人声/伴奏命名提示
 - `runtime.*`：设备偏好、日志级别、Web 地址与端口
+- `llm.*`：大模型服务预留配置，可在 Web 设置页中填写
 
 把 MDX-Net 模型文件放到 `data/models/`，并确保 `separator.model_file` 指向正确文件名。
 
@@ -67,6 +78,15 @@ python main.py --config /path/to/config.yaml --port 7860 --no-browser
 ```
 
 默认打开 `http://127.0.0.1:7860`。
+
+## Web 设置页
+
+顶部导航栏新增“设置”Tab，可保存到本地 `config.yaml`：
+
+- 服务端口：不能使用 `5173` 或 `8000`，修改后需重启
+- 分离后端与模型路径
+- B 站 Cookie 认证
+- 大模型服务商、API Base、API Key、模型名称（预留）
 
 ## 认证与下载
 
@@ -103,3 +123,5 @@ SunVideoTool/
 
 - 同一时间只允许一个任务运行
 - 分离模型文件不会自动随代码分发，需要下载或放入本地模型目录
+
+下载库支持“删除选中视频”和“清空下载历史”，会同步删除视频、元数据与封面文件。

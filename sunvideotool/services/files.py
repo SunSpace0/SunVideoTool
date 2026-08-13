@@ -116,6 +116,36 @@ def get_video_path(config: Dict[str, Any], selected_name: str) -> Path:
     return video_path
 
 
+def _remove_video_record(video_path: Path) -> None:
+    sidecar = read_json_file(get_video_sidecar_path(video_path))
+    thumbnail_path = sidecar.get("thumbnail_path")
+    if thumbnail_path:
+        Path(thumbnail_path).unlink(missing_ok=True)
+    get_video_sidecar_path(video_path).unlink(missing_ok=True)
+    video_path.unlink(missing_ok=True)
+
+
+def delete_video_record(config: Dict[str, Any], selected_name: str) -> str:
+    video_path = get_video_path(config, selected_name)
+    _remove_video_record(video_path)
+    return f"已删除: {selected_name}"
+
+
+def clear_video_records(config: Dict[str, Any]) -> int:
+    source_dir = normalize_path(require_mapping(config, "paths")["source_video_dir"])
+    if not source_dir.exists():
+        return 0
+
+    video_paths = [
+        path
+        for path in source_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in VIDEO_EXTENSIONS
+    ]
+    for video_path in video_paths:
+        _remove_video_record(video_path)
+    return len(video_paths)
+
+
 def sanitize_name(name: str) -> str:
     cleaned = re.sub(r'[\\/:*?"<>|]+', "_", name).strip()
     return cleaned or "untitled"
