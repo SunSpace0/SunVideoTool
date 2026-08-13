@@ -4,8 +4,9 @@ import argparse
 from pathlib import Path
 from typing import Sequence
 
+import uvicorn
+
 from .context import build_context
-from .web import WebApp
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -14,6 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--host", default=None, help="覆盖监听地址")
     parser.add_argument("--port", type=int, default=None, help="覆盖监听端口")
     parser.add_argument("--no-browser", action="store_true", help="启动后不自动打开浏览器")
+    parser.add_argument("--reload", action="store_true", help="开发模式热更新后端")
     return parser
 
 
@@ -32,13 +34,12 @@ def main(argv: Sequence[str] | None = None) -> None:
     if context.device == "cpu":
         context.logger.info("未检测到可用的 Metal/MPS，将自动回退到 CPU")
 
-    app = WebApp(context).build()
-    app.queue(default_concurrency_limit=1, max_size=1)
-    app.launch(
-        server_name=host,
-        server_port=port,
-        inbrowser=not args.no_browser,
-        show_error=True,
+    uvicorn.run(
+        "sunvideotool.api:app",
+        host=host,
+        port=port,
+        reload=args.reload,
+        log_level=context.config["runtime"].get("log_level", "INFO").lower(),
     )
 
 

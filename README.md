@@ -1,6 +1,6 @@
 # SunVideoTool
 
-纯本地 Mac 短视频下载与 AI 音轨分离工具。使用 Gradio 提供本地 Web 界面，下载任务与音轨分离任务串行执行。
+纯本地 Mac 短视频下载与 AI 音轨分离工具。前端使用 React + Vite，后端使用 FastAPI，下载任务与音轨分离任务串行执行。
 
 ## 功能
 
@@ -35,12 +35,6 @@ source .venv/bin/activate
 pip install -e ".[separation]"
 ```
 
-`audio-separator` 是默认可选分离后端，如果使用本地 UVR5 自定义接口，也可以跳过：
-
-```bash
-pip install -e ".[separation]"
-```
-
 ## 配置
 
 首次运行前复制配置模板：
@@ -61,25 +55,36 @@ cp config.example.yaml config.yaml
 
 把 MDX-Net 模型文件放到 `data/models/`，并确保 `separator.model_file` 指向正确文件名。
 
-## 启动
+## 一键启动（开发模式，热更新）
 
 ```bash
-python main.py
-# 或
-python -m sunvideotool
-# 安装后也可以
-sunvideotool
+./start.sh
 ```
 
-可选参数：
+脚本会：
+
+- 使用 `.venv`（不存在时自动创建并安装依赖）
+- 使用 npm 安装前端依赖
+- 启动 FastAPI 后端：`http://127.0.0.1:7860`，并启用 `--reload`
+- 启动 Vite 前端：`http://127.0.0.1:5176`，支持 HMR
+
+如需手动运行：
 
 ```bash
-python main.py --config /path/to/config.yaml --port 7860 --no-browser
+.venv/bin/python -m uvicorn sunvideotool.api:app --reload
+npm --prefix frontend run dev -- --port 5176
 ```
 
-默认打开 `http://127.0.0.1:7860`。
+## 生产运行
 
-## Web 设置页
+```bash
+npm --prefix frontend run build
+.venv/bin/python main.py
+```
+
+构建后 FastAPI 会自动托管 `frontend/dist/`，统一从 `http://127.0.0.1:7860` 访问。
+
+## 配置页
 
 顶部导航栏新增“设置”Tab，可保存到本地 `config.yaml`：
 
@@ -110,12 +115,14 @@ SunVideoTool/
 │   ├── config.py            # 配置加载与校验
 │   ├── context.py           # 运行时上下文与设备检测
 │   ├── pipeline.py          # 下载/分离任务编排
-│   ├── web.py               # Gradio 界面
+│   ├── api.py               # FastAPI 接口
+│   ├── settings.py          # 设置保存
 │   └── services/
 │       ├── download.py      # yt-dlp 下载
 │       ├── files.py         # 文件与任务记录
 │       ├── media.py         # ffmpeg 音视频处理
 │       └── separation.py    # 音轨分离后端
+├── frontend/                # React + Vite 前端
 └── data/                    # 运行数据，Git 中仅保留目录结构
 ```
 

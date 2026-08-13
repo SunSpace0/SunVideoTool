@@ -9,7 +9,8 @@ description = "纯本地短视频下载与 AI 音轨分离工具"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "gradio>=4.44",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
     "yt-dlp>=2024.12.13",
     "torch>=2.2",
     "PyYAML>=6.0",
