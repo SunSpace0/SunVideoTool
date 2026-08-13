@@ -1,0 +1,49 @@
+paths:
+  # 相对路径会基于 config.yaml 所在目录解析
+  project_root: .
+  source_video_dir: data/source_video
+  output_dir: data/output
+  models_dir: data/models
+  runtime_dir: data/runtime
+  ffmpeg_bin: ffmpeg
+  ffprobe_bin: ffprobe
+
+yt_dlp:
+  format: "bv*+ba/b"
+  merge_output_format: mp4
+  filename_template: "%(title).120s_%(id)s.%(ext)s"
+  noplaylist: true
+  quiet: true
+  no_warnings: true
+  writethumbnail: false
+  writesubtitles: false
+  cookiefile: ""
+  # cookiesfrombrowser 可填写 chrome / firefox / safari 等
+  cookiesfrombrowser: "chrome"
+  cookie_header: ""
+  impersonate: "chrome-136"
+  http_headers:
+    Referer: "https://www.bilibili.com"
+    User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+
+separator:
+  # auto / audio-separator / custom
+  backend: auto
+  model_file: data/models/UVR-MDX-NET-Inst_HQ_5.onnx
+  auto_download_model: true
+  python_api_module: ""
+  python_api_callable: ""
+  task_dir_time_format: "%Y-%m-%d_%H%M%S"
+  primary_stem_hint: vocal
+  secondary_stem_hint: instrumental
+  internal_audio_format: wav
+  sample_rate: 44100
+  channels: 2
+  mp3_bitrate: 320k
+
+runtime:
+  device_preference: mps
+  allow_cpu_fallback: true
+  log_level: INFO
+  host: 127.0.0.1
+  port: 7860

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sunvideotool"
+version = "0.1.0"
+description = "纯本地短视频下载与 AI 音轨分离工具"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "gradio>=4.44",
+    "yt-dlp>=2024.12.13",
+    "torch>=2.2",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+separation = ["audio-separator>=0.16"]
+
+[project.scripts]
+sunvideotool = "sunvideotool.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sunvideotool*"]

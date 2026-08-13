@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# macOS
+.DS_Store
+
+# Local configuration and user data
+config.yaml
+data/source_video/*
+data/output/*
+data/models/*
+data/runtime/*
+
+# Keep the directory structure in Git
+!data/source_video/.gitkeep
+!data/output/.gitkeep
+!data/models/.gitkeep
+!data/runtime/.gitkeep
+!data/runtime/logs/
+!data/runtime/tmp/
+!data/runtime/logs/.gitkeep
+!data/runtime/tmp/.gitkeep
