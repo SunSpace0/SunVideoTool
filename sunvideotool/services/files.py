@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -12,6 +13,7 @@ from ..exceptions import ProcessingError
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"}
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg"}
+_task_dir_lock = threading.Lock()
 
 
 def read_json_file(path: Path) -> Dict[str, Any]:
@@ -156,11 +158,12 @@ def make_task_output_dir(config: Dict[str, Any], video_path: Path) -> Path:
     separator_cfg = require_mapping(config, "separator")
     output_dir = normalize_path(paths["output_dir"])
     time_format = require_string(separator_cfg, "task_dir_time_format")
-    base_name = f"{datetime.now().strftime(time_format)}_{sanitize_name(video_path.stem)}"
-    task_dir = output_dir / base_name
-    counter = 1
-    while task_dir.exists():
-        task_dir = output_dir / f"{base_name}_{counter}"
-        counter += 1
-    task_dir.mkdir(parents=True, exist_ok=False)
-    return task_dir
+    with _task_dir_lock:
+        base_name = f"{datetime.now().strftime(time_format)}_{sanitize_name(video_path.stem)}"
+        task_dir = output_dir / base_name
+        counter = 1
+        while task_dir.exists():
+            task_dir = output_dir / f"{base_name}_{counter}"
+            counter += 1
+        task_dir.mkdir(parents=True, exist_ok=False)
+        return task_dir

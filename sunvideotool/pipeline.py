@@ -86,8 +86,13 @@ def refresh_video_choices(context: AppContext) -> list[str]:
     return list_local_videos(context.config)
 
 
-def run_download(context: AppContext, url: str, log_cb: Callable[[str], str]) -> Tuple[str, list[str]]:
-    download_video(context, url, log_cb)
+def run_download(
+    context: AppContext,
+    url: str,
+    log_cb: Callable[[str], str],
+    progress_cb: Callable[[float], None] | None = None,
+) -> Tuple[str, list[str]]:
+    download_video(context, url, log_cb, progress_cb)
     choices = refresh_video_choices(context)
     return choices[-1] if choices else "", choices
 

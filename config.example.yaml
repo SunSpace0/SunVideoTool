@@ -18,10 +18,11 @@ yt_dlp:
   writethumbnail: false
   writesubtitles: false
   cookiefile: ""
-  # cookiesfrombrowser 可填写 chrome / firefox / safari 等
-  cookiesfrombrowser: "chrome"
+  # cookiesfrombrowser 可填写 chrome / firefox / safari 等；浏览器登录态读取失败时请留空，改用 cookie_header
+  cookiesfrombrowser: ""
   cookie_header: ""
-  impersonate: "chrome-136"
+  # 部分平台对浏览器指纹敏感；如遇 412/风控可尝试 chrome-136 等可用版本
+  impersonate: ""
   http_headers:
     Referer: "https://www.bilibili.com"
     User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
@@ -46,7 +47,8 @@ runtime:
   allow_cpu_fallback: true
   log_level: INFO
   host: 127.0.0.1
-  port: 7860
+  port: 18880
+  frontend_port: 18881
 
 llm:
   provider: ""

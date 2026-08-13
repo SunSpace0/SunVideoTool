@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 
 PYTHON_BIN="${PYTHON_BIN:-$PWD/.venv/bin/python}"
 HOST="${HOST:-127.0.0.1}"
-FRONTEND_PORT="${FRONTEND_PORT:-5176}"
+FRONTEND_PORT="${FRONTEND_PORT:-}"
 
 if [ ! -f config.yaml ]; then
   cp config.example.yaml config.yaml
@@ -18,11 +18,20 @@ if [ ! -x "$PYTHON_BIN" ]; then
   "$PYTHON_BIN" -m pip install -e ".[separation]"
 fi
 
-BACKEND_PORT="$("$PYTHON_BIN" - <<'PY'
+read_port() {
+  "$PYTHON_BIN" - "$1" <<'PY'
 from sunvideotool.config import load_config
-print(load_config().get('runtime', {}).get('port', 7860))
+import sys
+key = sys.argv[1]
+default = 18881 if key == "frontend_port" else 18880
+print(load_config().get('runtime', {}).get(key, default))
 PY
-)"
+}
+
+BACKEND_PORT="$(read_port port)"
+if [ -z "$FRONTEND_PORT" ]; then
+  FRONTEND_PORT="$(read_port frontend_port)"
+fi
 
 if [ ! -d frontend/node_modules ]; then
   echo "安装前端依赖..."
@@ -45,7 +54,10 @@ echo "前端: http://$HOST:$FRONTEND_PORT"
   --reload &
 BACKEND_PID=$!
 
-VITE_PORT="$FRONTEND_PORT" npm --prefix frontend run dev \
+VITE_PORT="$FRONTEND_PORT" \
+VITE_BACKEND_HOST="$HOST" \
+VITE_BACKEND_PORT="$BACKEND_PORT" \
+npm --prefix frontend run dev \
   -- --host "$HOST" --port "$FRONTEND_PORT" &
 FRONTEND_PID=$!
 

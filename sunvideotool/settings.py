@@ -3,12 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Dict
 
-from .config import save_config
+from .config import RESERVED_PORTS, save_config
 from .context import AppContext
 from .exceptions import ConfigError
-
-
-RESERVED_PORTS = {5173, 8000}
 
 
 def apply_settings(context: AppContext, payload: Dict[str, Any]) -> str:
@@ -19,6 +16,7 @@ def apply_settings(context: AppContext, payload: Dict[str, Any]) -> str:
 
     host = str(runtime.get("host", "")).strip()
     port = runtime.get("port")
+    frontend_port = runtime.get("frontend_port")
     separator_backend = str(separator.get("backend", "")).strip()
     model_file = str(separator.get("model_file", "")).strip()
 
@@ -27,10 +25,17 @@ def apply_settings(context: AppContext, payload: Dict[str, Any]) -> str:
     except (TypeError, ValueError) as exc:
         raise ConfigError("runtime.port 必须是整数") from exc
 
-    if port_number in RESERVED_PORTS:
-        raise ConfigError("5173 和 8000 端口已被其他项目占用，请更换端口")
+    try:
+        frontend_port_number = int(frontend_port)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError("runtime.frontend_port 必须是整数") from exc
+
+    if port_number in RESERVED_PORTS or frontend_port_number in RESERVED_PORTS:
+        raise ConfigError("请勿使用 3000/5173/5174/5175/5176/7860/8000/8080 等常见开发端口，请更换端口")
     if not 1024 <= port_number <= 65535:
         raise ConfigError("runtime.port 应在 1024-65535 之间")
+    if not 1024 <= frontend_port_number <= 65535:
+        raise ConfigError("runtime.frontend_port 应在 1024-65535 之间")
     if not host:
         raise ConfigError("监听地址不能为空")
     if separator_backend not in {"auto", "audio-separator", "custom"}:
@@ -42,6 +47,7 @@ def apply_settings(context: AppContext, payload: Dict[str, Any]) -> str:
     updated.setdefault("runtime", {})
     updated["runtime"]["host"] = host
     updated["runtime"]["port"] = port_number
+    updated["runtime"]["frontend_port"] = frontend_port_number
 
     updated.setdefault("separator", {})
     updated["separator"]["backend"] = separator_backend

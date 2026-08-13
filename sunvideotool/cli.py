@@ -7,6 +7,7 @@ from typing import Sequence
 import uvicorn
 
 from .context import build_context
+from .config import RESERVED_PORTS
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,9 +25,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     context = build_context(args.config)
     runtime = context.config["runtime"]
     host = args.host or runtime.get("host", "127.0.0.1")
-    port = args.port or int(runtime.get("port", 7860))
-    if port in {5173, 8000}:
-        raise SystemExit("5173 和 8000 端口已被其他项目占用，请更换端口")
+    port = args.port or int(runtime.get("port", 18880))
+    if port in RESERVED_PORTS:
+        raise SystemExit("请勿使用 3000/5173/5174/5175/5176/7860/8000/8080 等常见开发端口，请更换端口")
     if not 1024 <= port <= 65535:
         raise SystemExit("服务端口应在 1024-65535 之间")
 

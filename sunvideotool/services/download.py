@@ -5,7 +5,7 @@ import http.cookiejar
 from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Dict, Set, Tuple
+from typing import Any, Callable, Dict, Tuple
 
 from yt_dlp import YoutubeDL
 from yt_dlp.networking.impersonate import ImpersonateTarget
@@ -16,10 +16,6 @@ from ..exceptions import ProcessingError
 from ..context import AppContext
 from .files import VIDEO_EXTENSIONS, get_video_sidecar_path, sanitize_name, write_json_file
 from .media import generate_video_thumbnail
-
-
-def current_files(directory: Path) -> Set[Path]:
-    return {path.resolve() for path in directory.rglob("*") if path.is_file()}
 
 
 def build_cookiefile_from_header(cookie_header: str, runtime_tmp_dir: Path) -> str:
@@ -96,13 +92,71 @@ def build_ytdlp_options(context: AppContext) -> Tuple[Dict[str, Any], Path | Non
     return yt_dlp_cfg, temp_cookie_path
 
 
-def download_video(context: AppContext, url: str, log_cb: Callable[[str], None]) -> Path:
+def _pick_downloaded_video(info: Dict[str, Any], source_dir: Path) -> Path:
+    for entry in info.get("requested_downloads") or []:
+        candidate = entry.get("filepath") or entry.get("_filename")
+        if not candidate:
+            continue
+        path = Path(candidate)
+        if path.is_file() and path.suffix.lower() in VIDEO_EXTENSIONS:
+            return path
+
+    filepath = info.get("filepath")
+    if filepath:
+        path = Path(filepath)
+        if path.is_file() and path.suffix.lower() in VIDEO_EXTENSIONS:
+            return path
+
+    raise ProcessingError("下载完成，但未从 yt-dlp 结果中找到视频文件")
+
+
+def download_video(
+    context: AppContext,
+    url: str,
+    log_cb: Callable[[str], None],
+    progress_cb: Callable[[float], None] | None = None,
+) -> Path:
     if not url.strip():
         raise ProcessingError("请输入视频链接")
 
     source_dir = context.source_video_dir
-    before_files = current_files(source_dir)
     options, temp_cookie_path = build_ytdlp_options(context)
+    last_progress_log = -1.0
+
+    def _progress_hook(data: Dict[str, Any]) -> None:
+        nonlocal last_progress_log
+        status = str(data.get("status") or "")
+        if status == "finished":
+            if progress_cb:
+                progress_cb(100.0)
+            log_cb("下载进度 100.0%，开始合并处理")
+            return
+
+        if status != "downloading":
+            return
+
+        total = data.get("total_bytes") or data.get("total_bytes_estimate")
+        downloaded = data.get("downloaded_bytes") or 0
+        if not total:
+            if progress_cb:
+                progress_cb(0.0)
+            return
+
+        percent = round(max(0.0, min(float(downloaded) / float(total) * 100.0, 99.9)), 1)
+        if progress_cb:
+            progress_cb(percent)
+
+        if last_progress_log < 0 or percent - last_progress_log >= 2:
+            filename = Path(str(data.get("filename") or "")).name
+            speed = data.get("speed")
+            speed_text = f"{float(speed) / 1024 / 1024:.2f} MiB/s" if speed else "未知速度"
+            detail = f"  {filename}" if filename else ""
+            log_cb(f"下载进度 {percent:.1f}%{detail}  速度 {speed_text}")
+            last_progress_log = percent
+
+    if progress_cb:
+        options["progress_hooks"] = [_progress_hook]
+
     log_cb("开始解析并下载视频")
 
     info: Dict[str, Any] | None = None
@@ -118,13 +172,7 @@ def download_video(context: AppContext, url: str, log_cb: Callable[[str], None])
         if temp_cookie_path and temp_cookie_path.exists():
             temp_cookie_path.unlink(missing_ok=True)
 
-    after_files = current_files(source_dir)
-    new_files = sorted(after_files - before_files, key=lambda item: item.stat().st_mtime)
-    video_candidates = [path for path in new_files if path.suffix.lower() in VIDEO_EXTENSIONS]
-    if not video_candidates:
-        raise ProcessingError("下载完成，但未在 source_video 中发现新的视频文件")
-
-    downloaded = video_candidates[-1]
+    downloaded = _pick_downloaded_video(info, source_dir)
     thumbnail_path = downloaded.with_suffix(".jpg")
     try:
         generate_video_thumbnail(context, downloaded, thumbnail_path, log_cb)

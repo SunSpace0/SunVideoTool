@@ -12,6 +12,7 @@ from .exceptions import ConfigError
 
 CONFIG_FILE = Path(__file__).resolve().parent.parent / "config.yaml"
 EXAMPLE_CONFIG_FILE = Path(__file__).resolve().parent.parent / "config.example.yaml"
+RESERVED_PORTS = {3000, 5173, 5174, 5175, 5176, 7860, 8000, 8080}
 
 
 def get_config_root(config_path: Path = CONFIG_FILE) -> Path:
@@ -132,13 +133,19 @@ def validate_config(config: Dict[str, Any]) -> Tuple[str, str]:
         require_string(runtime, key)
 
     try:
-        port = int(runtime.get("port", 7860))
+        port = int(runtime.get("port", 18880))
     except (TypeError, ValueError):
         raise ConfigError("runtime.port 必须是整数")
-    if port in {5173, 8000}:
-        raise ConfigError("5173 和 8000 端口已被其他项目占用，请更换 runtime.port")
+    try:
+        frontend_port = int(runtime.get("frontend_port", 18881))
+    except (TypeError, ValueError):
+        raise ConfigError("runtime.frontend_port 必须是整数")
+    if port in RESERVED_PORTS or frontend_port in RESERVED_PORTS:
+        raise ConfigError("请勿使用 3000/5173/5174/5175/5176/7860/8000/8080 等常见开发端口，请更换 runtime.port / runtime.frontend_port")
     if not 1024 <= port <= 65535:
         raise ConfigError("runtime.port 应在 1024-65535 之间")
+    if not 1024 <= frontend_port <= 65535:
+        raise ConfigError("runtime.frontend_port 应在 1024-65535 之间")
 
     ffmpeg_bin = resolve_binary(paths["ffmpeg_bin"], "ffmpeg")
     ffprobe_bin = resolve_binary(paths["ffprobe_bin"], "ffprobe")
